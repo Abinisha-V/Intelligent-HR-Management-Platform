@@ -1,0 +1,79 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mb-5">
+  <div class="col-lg-8">
+    <div class="card glass-card p-4 p-md-5">
+      <div class="text-center mb-5">
+        <h2 class="text-primary mb-1">Resume Screening Result</h2>
+        <p class="text-secondary small mb-0">AI matching assessment based on semantic similarity analysis.</p>
+      </div>
+
+      <div class="row g-4 align-items-center mb-5">
+        <div class="col-md-5 text-center">
+          <div class="score-circle-container">
+            <svg class="score-circle-svg" width="150" height="150">
+              <circle class="score-circle-bg" cx="75" cy="75" r="60"></circle>
+              {% set status_class = 'shortlisted' if candidate.score >= 75 else 'maybe' if candidate.score >= 50 else 'rejected' %}
+              {% set circumference = 377 %}
+              {% set offset = circumference - (candidate.score / 100) * circumference %}
+              <circle class="score-circle-bar {{ status_class }}" cx="75" cy="75" r="60" 
+                      stroke-dasharray="{{ circumference }}" 
+                      stroke-dashoffset="{{ offset }}"></circle>
+            </svg>
+            <div class="score-text">
+              <div class="score-value">{{ "%.1f"|format(candidate.score) }}%</div>
+              <div class="score-label">MATCH</div>
+            </div>
+          </div>
+          <div class="mt-3">
+            {% if candidate.status == 'Shortlisted' %}
+              <span class="badge bg-success fs-6 px-3 py-2"><i class="fas fa-circle-check me-1"></i> Shortlisted</span>
+            {% elif candidate.status == 'Maybe' %}
+              <span class="badge bg-warning fs-6 px-3 py-2"><i class="fas fa-circle-exclamation me-1"></i> Potential Match</span>
+            {% else %}
+              <span class="badge bg-danger fs-6 px-3 py-2"><i class="fas fa-circle-xmark me-1"></i> Rejected</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-7 border-start border-secondary border-opacity-25 ps-md-4">
+          <h4 class="text-primary mb-4 pb-2 border-bottom border-secondary border-opacity-10">Candidate Details</h4>
+          
+          <div class="row gy-3 mb-4">
+            <div class="col-12">
+              <div class="text-secondary small">Name</div>
+              <div class="fw-semibold text-primary fs-5">{{ candidate.name }}</div>
+            </div>
+            <div class="col-12">
+              <div class="text-secondary small">Email Address</div>
+              <div class="fw-semibold text-primary"><a href="mailto:{{ candidate.email }}" class="text-info text-decoration-none"><i class="far fa-envelope me-1"></i> {{ candidate.email }}</a></div>
+            </div>
+            <div class="col-6">
+              <div class="text-secondary small">Status Class</div>
+              <div class="fw-semibold text-primary">{{ candidate.status }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-secondary small">Screened On</div>
+              <div class="fw-semibold text-primary">{{ candidate.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-dark border border-secondary border-opacity-10 rounded-3 p-4 mb-5">
+        <h5 class="text-primary mb-3"><i class="fas fa-bullseye text-warning me-2"></i>Job Description Evaluated</h5>
+        <p class="text-secondary small mb-0 style-scroll" style="max-height: 120px; overflow-y: auto; white-space: pre-wrap;">{{ candidate.job_description }}</p>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center">
+        <a class="btn btn-outline-primary px-4" href="{{ url_for('index') }}">
+          <i class="fas fa-house me-2"></i> Dashboard
+        </a>
+        <a class="btn btn-success px-4" href="{{ url_for('resume_screen') }}">
+          Screen Another <i class="fas fa-cloud-arrow-up ms-2"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

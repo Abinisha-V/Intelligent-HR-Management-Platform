@@ -1,0 +1,198 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h1>HR Analytics</h1>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card p-3">
+      <h5>Performance Trends Over Time</h5>
+      <canvas id="performanceTrendsChart" width="800" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h5>Attrition Risk Analysis</h5>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Risk Level</th>
+            <th>Count</th>
+            <th>Percentage</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% set total_attrition = attrition_counts.values() | sum %}
+        {% for risk, count in attrition_counts.items() %}
+          <tr>
+            <td><span class="badge bg-{{ 'success' if risk == 'Low' else 'danger' }}">{{ risk }}</span></td>
+            <td>{{ count }}</td>
+            <td>{{ "%.1f"|format(count / total_attrition * 100 if total_attrition > 0 else 0) }}%</td>
+            <td><small class="text-muted">↗️ Increasing</small></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h5>Performance Distribution</h5>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Performance Level</th>
+            <th>Count</th>
+            <th>Percentage</th>
+            <th>Avg Tasks</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% set total_perf = performance_counts.values() | sum %}
+        {% for perf, count in performance_counts.items() %}
+          <tr>
+            <td><span class="badge bg-{{ 'success' if perf == 'High Performer' else 'warning' if perf == 'Average Performer' else 'danger' }}">{{ perf }}</span></td>
+            <td>{{ count }}</td>
+            <td>{{ "%.1f"|format(count / total_perf * 100 if total_perf > 0 else 0) }}%</td>
+            <td>{{ "%.1f"|format(45 if perf == 'High Performer' else 35 if perf == 'Average Performer' else 25) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card p-3">
+      <h5>Resume Rankings <small class="text-muted">(Sorted by Score)</small></h5>
+      <div class="table-responsive">
+        <table class="table table-striped" id="resumeTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)">Name <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(1)">Email <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(2)">Score <i class="fas fa-sort"></i></th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for c in candidates %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>{{ c.email }}</td>
+              <td><span class="badge bg-{{ 'success' if c.score >= 75 else 'warning' if c.score >= 50 else 'danger' }}">{{ "%.1f"|format(c.score) }}%</span></td>
+              <td><span class="badge bg-{{ 'success' if c.status == 'Shortlisted' else 'warning' if c.status == 'Maybe' else 'danger' }}">{{ c.status }}</span></td>
+              <td>{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row gy-3">
+  <div class="col-md-6">
+    <div class="card p-3"><h5>Recent Resume Screenings</h5>
+      <table class="table table-sm mt-3">
+        <thead><tr><th>Name</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for c in candidates %}
+          <tr>
+            <td>{{c.name}}</td>
+            <td>{{ "%.1f"|format(c.score) }}%</td>
+            <td>{{c.status}}</td>
+            <td>{{c.created_at.strftime('%Y-%m-%d')}}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3"><h5>Recent Performance Records</h5>
+      <table class="table table-sm mt-3">
+        <thead><tr><th>Name</th><th>Perf</th><th>Attrition</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for r in employees %}
+          <tr>
+            <td>{{r.name}}</td>
+            <td>{{r.performance_prediction}}</td>
+            <td>{{r.attrition_risk}}</td>
+            <td>{{r.created_at.strftime('%Y-%m-%d')}}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Performance Trends Chart
+  const trendsCtx = document.getElementById('performanceTrendsChart').getContext('2d');
+  new Chart(trendsCtx, {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      datasets: [{
+        label: 'High Performers',
+        data: [12, 15, 18, 22, 25, 28],
+        borderColor: '#28a745',
+        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+        tension: 0.4
+      }, {
+        label: 'Average Performers',
+        data: [25, 28, 30, 32, 35, 38],
+        borderColor: '#ffc107',
+        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+        tension: 0.4
+      }, {
+        label: 'Low Performers',
+        data: [8, 7, 5, 3, 2, 1],
+        borderColor: '#dc3545',
+        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      },
+      plugins: {
+        legend: { position: 'top' }
+      }
+    }
+  });
+});
+
+// Table sorting function
+function sortTable(column) {
+  const table = document.getElementById('resumeTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  rows.sort((a, b) => {
+    const aVal = a.cells[column].textContent.trim();
+    const bVal = b.cells[column].textContent.trim();
+
+    if (column === 2) { // Score column
+      return parseFloat(bVal) - parseFloat(aVal);
+    }
+    return aVal.localeCompare(bVal);
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mb-5">
+  <div class="col-lg-8">
+    <div class="card glass-card p-4 p-md-5">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="stat-icon-wrapper primary m-0">
+          <i class="fas fa-file-invoice fa-lg"></i>
+        </div>
+        <div>
+          <h2 class="mb-0 text-primary">Resume Screening</h2>
+          <p class="text-secondary small mb-0">Assess candidate suitability with BERT-powered semantic parsing.</p>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <label class="form-label" for="name">Candidate Name</label>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-radius: 10px 0 0 10px; border-color: rgba(255, 255, 255, 0.08);"><i class="fas fa-user"></i></span>
+              <input class="form-control border-start-0" style="border-radius: 0 10px 10px 0 !important;" id="name" name="name" placeholder="John Doe" required autocomplete="off">
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <label class="form-label" for="email">Candidate Email</label>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-radius: 10px 0 0 10px; border-color: rgba(255, 255, 255, 0.08);"><i class="fas fa-envelope"></i></span>
+              <input type="email" class="form-control border-start-0" style="border-radius: 0 10px 10px 0 !important;" id="email" name="email" placeholder="john.doe@example.com" required autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label" for="job_description">Job Description / Required Skills</label>
+          <textarea class="form-control" id="job_description" name="job_description" rows="5" placeholder="Paste the job description, required skills, or experience here..." required></textarea>
+        </div>
+
+        <div class="mb-5">
+          <label class="form-label">Resume Document</label>
+          
+          <!-- Hidden Native File Input -->
+          <input class="d-none" type="file" id="resumeFileInput" name="resume" accept=".pdf,.docx" required>
+          
+          <!-- Custom Visual Drag-and-Drop Dropzone -->
+          <div class="upload-drop-zone" id="dropZone" onclick="triggerFileSelect()">
+            <i class="fas fa-cloud-arrow-up"></i>
+            <h5 class="mb-1 text-primary fw-bold" id="uploadTitle">Drag & Drop Resume Here</h5>
+            <p class="text-secondary small mb-0" id="uploadDesc">Supports PDF or DOCX formats (Max size: 10MB)</p>
+            <div class="d-none mt-2" id="fileDetails">
+              <span class="badge bg-primary py-2 px-3">
+                <i class="fas fa-file-lines me-2"></i><span class="file-info" id="fileName">resume.pdf</span>
+              </span>
+              <div class="text-secondary small mt-1" id="fileSize">0 KB</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <a class="btn btn-outline-primary px-4" href="{{ url_for('index') }}">
+            <i class="fas fa-arrow-left me-2"></i> Back
+          </a>
+          <button class="btn btn-success px-5 py-3 fs-5" type="submit">
+            Screen Candidate <i class="fas fa-wand-magic-sparkles ms-2"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('resumeFileInput');
+const fileDetails = document.getElementById('fileDetails');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const uploadTitle = document.getElementById('uploadTitle');
+const uploadDesc = document.getElementById('uploadDesc');
+
+// Trigger file input click when drop zone is clicked
+function triggerFileSelect() {
+  fileInput.click();
+}
+
+// Handle selected file info display
+fileInput.addEventListener('change', function() {
+  if (this.files && this.files.length > 0) {
+    displayFileInfo(this.files[0]);
+  }
+});
+
+// Drag & drop event listeners
+['dragenter', 'dragover'].forEach(eventName => {
+  dropZone.addEventListener(eventName, preventDefaults, false);
+  document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+  dropZone.addEventListener(eventName, preventDefaults, false);
+  document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+// Add visual cue on dragover
+['dragenter', 'dragover'].forEach(eventName => {
+  dropZone.addEventListener(eventName, () => {
+    dropZone.classList.add('dragover');
+  }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+  dropZone.addEventListener(eventName, () => {
+    dropZone.classList.remove('dragover');
+  }, false);
+});
+
+// Handle dropped files
+dropZone.addEventListener('drop', (e) => {
+  const dt = e.dataTransfer;
+  const files = dt.files;
+  if (files && files.length > 0) {
+    fileInput.files = files;
+    displayFileInfo(files[0]);
+  }
+}, false);
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+function displayFileInfo(file) {
+  // Validate type
+  const extension = file.name.split('.').pop().toLowerCase();
+  if (extension !== 'pdf' && extension !== 'docx') {
+    alert('Invalid file format. Please upload a PDF or DOCX file.');
+    fileInput.value = '';
+    resetDropZone();
+    return;
+  }
+
+  // Display details
+  fileName.textContent = file.name;
+  
+  // Format file size
+  let sizeLabel = '';
+  if (file.size > 1024 * 1024) {
+    sizeLabel = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+  } else {
+    sizeLabel = (file.size / 1024).toFixed(1) + ' KB';
+  }
+  fileSize.textContent = sizeLabel;
+
+  fileDetails.classList.remove('d-none');
+  uploadTitle.textContent = 'File Selected';
+  uploadDesc.textContent = 'Click to change the document';
+}
+
+function resetDropZone() {
+  fileDetails.classList.add('d-none');
+  uploadTitle.textContent = 'Drag & Drop Resume Here';
+  uploadDesc.textContent = 'Supports PDF or DOCX formats (Max size: 10MB)';
+}
+</script>
+{% endblock %}

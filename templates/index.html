@@ -1,0 +1,283 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row mb-5">
+  <div class="col-12">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h1 class="mb-1 text-primary"><i class="fas fa-cubes me-2"></i>HR AI Dashboard</h1>
+        <p class="text-secondary mb-0">Welcome back, {{ current_user.username }}. Here is your workforce and talent acquisition status.</p>
+      </div>
+      <div class="text-md-end">
+        <span class="badge bg-dark border border-secondary text-secondary py-2 px-3">
+          <i class="far fa-clock me-1"></i> <span id="current-time">Loading...</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats Cards -->
+<div class="row gy-4 mb-5">
+  <div class="col-md-3">
+    <div class="card glass-card h-100 hover-card">
+      <div class="card-body text-center p-4">
+        <div class="stat-icon-wrapper primary mb-3">
+          <i class="fas fa-file-invoice fa-xl"></i>
+        </div>
+        <h2 class="mb-1 text-primary fw-bold">{{ total_candidates }}</h2>
+        <p class="text-secondary small mb-2">Total Resumes Screened</p>
+        <span class="badge bg-success"><i class="fas fa-arrow-trend-up me-1"></i> +12% this month</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card glass-card h-100 hover-card">
+      <div class="card-body text-center p-4">
+        <div class="stat-icon-wrapper success mb-3">
+          <i class="fas fa-users-gear fa-xl"></i>
+        </div>
+        <h2 class="mb-1 text-success fw-bold">{{ total_employees }}</h2>
+        <p class="text-secondary small mb-2">Employee Records</p>
+        <span class="badge bg-success"><i class="fas fa-arrow-trend-up me-1"></i> +5% this month</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card glass-card h-100 hover-card">
+      <div class="card-body text-center p-4">
+        <div class="stat-icon-wrapper warning mb-3">
+          <i class="fas fa-triangle-exclamation fa-xl"></i>
+        </div>
+        <h2 class="mb-1 text-warning fw-bold">{{ high_risk }}</h2>
+        <p class="text-secondary small mb-2">High Attrition Risk</p>
+        <span class="badge bg-danger"><i class="fas fa-arrow-trend-up me-1"></i> +8% this month</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card glass-card h-100 hover-card">
+      <div class="card-body text-center p-4">
+        <div class="stat-icon-wrapper info mb-3">
+          <i class="fas fa-star-half-stroke fa-xl"></i>
+        </div>
+        <h2 class="mb-1 text-info fw-bold">{{ performance_counts.get('High Performer', 0) }}</h2>
+        <p class="text-secondary small mb-2">High Performers</p>
+        <span class="badge bg-success"><i class="fas fa-arrow-trend-up me-1"></i> +15% this month</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-5">
+  <div class="col-12">
+    <div class="card glass-card">
+      <div class="card-header">
+        <h5 class="mb-0 text-primary"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <a href="{{ url_for('resume_screen') }}" class="btn btn-outline-primary btn-lg w-100 h-100 d-flex flex-column align-items-center py-4 action-btn text-decoration-none">
+              <i class="fas fa-cloud-arrow-up fa-2x mb-3"></i>
+              <span class="fw-bold mb-1">Screen Resume</span>
+              <small class="text-secondary opacity-75">Upload & analyze candidate profiles</small>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{{ url_for('performance_predict') }}" class="btn btn-outline-success btn-lg w-100 h-100 d-flex flex-column align-items-center py-4 action-btn text-decoration-none">
+              <i class="fas fa-network-wired fa-2x mb-3"></i>
+              <span class="fw-bold mb-1">Risk Prediction</span>
+              <small class="text-secondary opacity-75">Forecast retention & productivity</small>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{{ url_for('analytics') }}" class="btn btn-outline-info btn-lg w-100 h-100 d-flex flex-column align-items-center py-4 action-btn text-decoration-none">
+              <i class="fas fa-chart-pie fa-2x mb-3"></i>
+              <span class="fw-bold mb-1">View Analytics</span>
+              <small class="text-secondary opacity-75">Inspect charts & detailed reports</small>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-5">
+  <div class="col-md-6">
+    <div class="card glass-card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary"><i class="fas fa-users-viewfinder me-2"></i>Performance Distribution</h5>
+        <button class="btn btn-sm btn-outline-primary py-1 px-3" onclick="refreshCharts()">
+          <i class="fas fa-arrows-rotate me-1"></i> Sync
+        </button>
+      </div>
+      <div class="card-body p-4 d-flex align-items-center justify-content-center" style="min-height: 300px;">
+        <div class="w-100" style="position: relative; height:260px;">
+          <canvas id="performanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card glass-card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary"><i class="fas fa-heart-pulse me-2"></i>Attrition Risk Distribution</h5>
+        <button class="btn btn-sm btn-outline-warning py-1 px-3" onclick="refreshCharts()">
+          <i class="fas fa-arrows-rotate me-1"></i> Sync
+        </button>
+      </div>
+      <div class="card-body p-4 d-flex align-items-center justify-content-center" style="min-height: 300px;">
+        <div class="w-100" style="position: relative; height:260px;">
+          <canvas id="attritionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initializeCharts();
+  updateTime();
+  setInterval(updateTime, 1000); // Update time every second
+});
+
+function updateTime() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('current-time').textContent = `${dateStr} | ${timeStr}`;
+}
+
+function initializeCharts() {
+  // Global Chart Defaults for dark mode
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.padding = 15;
+
+  // Performance Distribution Chart
+  const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+  new Chart(performanceCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['High Performer', 'Average Performer', 'Low Performer'],
+      datasets: [{
+        data: [{{ performance_counts.get('High Performer', 0) }}, {{ performance_counts.get('Average Performer', 0) }}, {{ performance_counts.get('Low Performer', 0) }}],
+        backgroundColor: [
+          'rgba(16, 185, 129, 0.85)', // Emerald
+          'rgba(245, 158, 11, 0.85)',  // Amber
+          'rgba(244, 63, 94, 0.85)'    // Rose
+        ],
+        hoverBackgroundColor: [
+          '#10b981',
+          '#f59e0b',
+          '#f43f5e'
+        ],
+        borderWidth: 2,
+        borderColor: '#0f1524',
+        hoverOffset: 12
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#cbd5e1',
+            font: { size: 12 }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f1524',
+          titleColor: '#f8fafc',
+          bodyColor: '#cbd5e1',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          borderWidth: 1,
+          padding: 12,
+          boxPadding: 6,
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+              return ` ${context.label}: ${context.parsed} (${percentage}%)`;
+            }
+          }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // Attrition Risk Chart
+  const attritionCtx = document.getElementById('attritionChart').getContext('2d');
+  new Chart(attritionCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Low Risk', 'High Risk'],
+      datasets: [{
+        data: [{{ attrition_counts.get('Low', 0) }}, {{ attrition_counts.get('High', 0) }}],
+        backgroundColor: [
+          'rgba(6, 182, 212, 0.85)', // Cyan
+          'rgba(245, 158, 11, 0.85)'   // Amber/Orange
+        ],
+        hoverBackgroundColor: [
+          '#06b6d4',
+          '#f59e0b'
+        ],
+        borderWidth: 2,
+        borderColor: '#0f1524',
+        hoverOffset: 12
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#cbd5e1',
+            font: { size: 12 }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f1524',
+          titleColor: '#f8fafc',
+          bodyColor: '#cbd5e1',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          borderWidth: 1,
+          padding: 12,
+          boxPadding: 6,
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+              return ` ${context.label}: ${context.parsed} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function refreshCharts() {
+  const buttons = document.querySelectorAll('button[onclick="refreshCharts()"]');
+  buttons.forEach(btn => {
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-1"></i> Syncing...';
+    btn.disabled = true;
+  });
+
+  setTimeout(() => {
+    location.reload();
+  }, 800);
+}
+</script>
+{% endblock %}

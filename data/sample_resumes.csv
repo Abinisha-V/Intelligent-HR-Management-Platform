@@ -1,0 +1,6 @@
+job_description,resume_text,expected_score
+"Python developer with Flask, Django, and machine learning experience","Experienced Python developer with 5 years of experience in Flask, Django, and machine learning. Proficient in pandas, numpy, and scikit-learn. Strong background in SQL and data analysis.",85
+"Data scientist proficient in pandas, scikit-learn, and SQL","Data scientist with expertise in machine learning algorithms, statistical analysis, and data visualization. Skilled in Python, R, SQL, and Tableau. Experience with large datasets and predictive modeling.",80
+"Full-stack developer with React, Node.js, and PostgreSQL","Full-stack developer with 4 years of experience in React, Node.js, Express, and MongoDB. Knowledge of REST APIs, GraphQL, and modern JavaScript frameworks. Experience with agile development.",75
+"DevOps engineer with AWS, Docker, and Kubernetes expertise","DevOps engineer specializing in AWS cloud infrastructure, Docker containers, and CI/CD pipelines. Experience with Kubernetes, Terraform, and monitoring tools like Prometheus and Grafana.",70
+Frontend developer specializing in Vue.js and TypeScript,"Frontend developer with expertise in Vue.js, TypeScript, and modern CSS frameworks. Experience with state management, testing, and performance optimization. Knowledge of UX/UI principles.",65
