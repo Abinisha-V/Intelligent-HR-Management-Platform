@@ -1,0 +1,48 @@
+# Python environments and bytecode
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and uploaded resumes
+*.db
+*.sqlite
+*.sqlite3
+/uploads/
+
+# IDE and operating-system files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.DS_Store
+Thumbs.db
+desktop.ini
+*.sublime-workspace
+
+# Temporary and log files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+*.log
+
+# Test, type-check, and coverage output
+.pytest_cache/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/

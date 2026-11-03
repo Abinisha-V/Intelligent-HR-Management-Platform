@@ -168,6 +168,8 @@ DATABASE_URL=sqlite:///hr_ai.db
 FLASK_ENV=development
 ```
 
+Set `SECRET_KEY` to a long, random value and keep it stable between restarts so login sessions remain valid. If it is unset, the application generates a temporary key at startup.
+
 ### 3. Generate Sample Data (Optional)
 
 ```bash
@@ -379,17 +381,27 @@ DATABASE_URL=postgresql://hr_user:secure_password@localhost:5432/hr_ai
 
 - **Default HR User**:
   - Username: `hr`
-  - Password: `hr123` (Change after first login!)
+  - Password: `hr123` on a new database (change it before using the system outside local development)
+  - The account is created on the first request when it is missing, and its password is stored as a Werkzeug hash.
+  - Existing accounts are never reset automatically. To set or change the HR password safely, run this from the project directory:
+
+```bash
+python -m flask --app app set-user-password hr
+```
+
+The command prompts for the new password without echoing it. Use `hr123` only if you specifically want to restore the documented default; choose a unique, strong password otherwise.
 
 - **Create New HR Users**:
-  - Use Flask CLI or database admin tools
-  - All passwords are hashed with Werkzeug
+  - Create users through the application database, and always call `set_password()` before saving.
+  - Never insert a plaintext password into the database.
+  - The `password_hash` column is sized for current Werkzeug hashes. Existing SQLite databases need no migration for this column; update the column to `VARCHAR(255)` in an existing MySQL database before creating new password hashes.
 
 ```python
 # To create new user programmatically
 from app import app, db, User
 
 with app.app_context():
+    db.create_all()
     new_user = User(username='newhrusername')
     new_user.set_password('secure_password')
     db.session.add(new_user)

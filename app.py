@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from urllib.parse import urlsplit
+import click
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -31,7 +33,7 @@ except ImportError as e:
 
 # Flask setup
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret")
+app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
 
 # Database configuration
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -52,30 +54,20 @@ ALLOWED_EXTENSIONS = {"pdf", "docx"}
 # Initialize DB & models
 db = SQLAlchemy(app)
 
-# Create database tables
-with app.app_context():
-    db.create_all()
-
 # Load ML models
 # Moved to lazy loading to avoid serverless timeouts
 
 # Initialize Flask-Login
 login_manager = LoginManager()
-login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(150), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), default='hr')  # Only HR role for now
 
     def set_password(self, password):
@@ -83,16 +75,6 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
-
-# Create default user if none exists
-with app.app_context():
-    if not User.query.first():
-        default_user = User(username='admin', role='hr')
-        default_user.set_password('admin123')
-        db.session.add(default_user)
-        db.session.commit()
-        print("Default user created: admin / admin123")
 
 
 class CandidateScreening(db.Model):
@@ -125,35 +107,62 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+
+def initialize_database():
+    if getattr(app, 'db_initialized', False):
+        return
+
+    db.create_all()
+    if not User.query.filter_by(username='hr').first():
+        hr_user = User(username='hr')
+        hr_user.set_password('hr123')
+        db.session.add(hr_user)
+        db.session.commit()
+
+    app.db_initialized = True
+
+
 @app.before_request
 def init_db():
-    if not hasattr(app, 'db_initialized'):
-        db.create_all()
-        
-        # Create default HR user if not exists
-        if not User.query.filter_by(username='hr').first():
-            hr_user = User(username='hr')
-            hr_user.set_password('hr123')  # Default password
-            db.session.add(hr_user)
-            db.session.commit()
-        
+    initialize_database()
+
+    if not getattr(app, 'models_initialized', False):
         try:
             load_performance_model()
-        except (EOFError, FileNotFoundError, Exception):
-            print("Training performance model...")
-            # from models.performance_model.performance_model import train_performance_model
-            # train_performance_model()
-            print("Using dummy performance model")
+        except Exception as e:
+            print(f"Performance model unavailable: {e}")
 
         try:
             load_attrition_model()
-        except (EOFError, FileNotFoundError, Exception):
-            print("Training attrition model...")
-            # from models.attrition_model.attrition_model import train_attrition_model
-            # train_attrition_model()
-            print("Using dummy attrition model")
+        except Exception as e:
+            print(f"Attrition model unavailable: {e}")
 
-        app.db_initialized = True
+        app.models_initialized = True
+
+
+@app.cli.command("set-user-password")
+@click.argument("username")
+def set_user_password(username):
+    """Set a user's password using hidden interactive prompts."""
+    initialize_database()
+    user = User.query.filter_by(username=username.strip()).first()
+    if user is None:
+        raise click.ClickException(f"User '{username}' does not exist.")
+
+    password = click.prompt("New password", hide_input=True, confirmation_prompt=True)
+    if not password:
+        raise click.ClickException("Password cannot be empty.")
+
+    user.set_password(password)
+    db.session.commit()
+    click.echo(f"Password updated for '{user.username}'.")
+
+
+login_manager.init_app(app)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -162,16 +171,26 @@ def login():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
         
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
+        user = User.query.filter_by(username=username).first() if username else None
+        if user and password and user.check_password(password):
             login_user(user)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('index'))
+            if next_page:
+                parsed_next = urlsplit(next_page)
+                if (
+                    next_page.startswith('/')
+                    and not next_page.startswith('//')
+                    and '\\' not in next_page
+                    and not parsed_next.scheme
+                    and not parsed_next.netloc
+                ):
+                    return redirect(next_page)
+            return redirect(url_for('index'))
         else:
-            flash('Invalid username or password', 'danger')
+            flash('Invalid username or password. Please try again.', 'danger')
     
     return render_template('login.html')
 

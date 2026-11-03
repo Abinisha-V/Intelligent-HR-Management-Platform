@@ -4,6 +4,9 @@ import sys
 import tempfile
 from flask import Flask
 
+# Keep tests isolated even though Flask-SQLAlchemy creates its engine during app setup.
+os.environ["DATABASE_URL"] = "sqlite://"
+
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
