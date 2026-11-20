@@ -824,9 +824,8 @@ MemoryError: Unable to allocate memory
 ## 📞 Support & Contact
 
 - **GitHub Issues**: For bug reports and features
-- **Email**: your-email@example.com
-- **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
-- **LinkedIn**: [Your Profile](https://linkedin.com/in/yourprofile)
+- **Email**: abinishavijayan@gmail.com
+- **LinkedIn**: [Your Profile](https://www.linkedin.com/in/abinisha-v-980997282/)
 
 ---
 
